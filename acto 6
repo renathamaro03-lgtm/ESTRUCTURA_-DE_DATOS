@@ -1,56 +1,63 @@
 ﻿using System;
-using System.Diagnostics; 
 
-class Clase9_Memoization
+// MÓDULO 3: Clase para demostrar referencias
+public class Alumno
+{
+    public string Nombre { get; set; } = string.Empty;
+}
+
+class Clase6_Modificadores
 {
     static void Main()
     {
-        Console.WriteLine("=== Benchmark: Fuerza Bruta vs Memoization ===\n");
+        Console.WriteLine("=== MÓDULO 1: Modificador 'ref' ===");
+        int x = 10;
+        int y = 25;
+        Console.WriteLine($"Antes del intercambio: x = {x}, y = {y}");
         
-        int n = 40; 
-        Stopwatch sw = new Stopwatch();
-
-        // --- MÉTODO 1: FUERZA BRUTA ---
-        Console.WriteLine($"Calculando Fibonacci({n}) con Fuerza Bruta (Espera unos segundos)...");
-        sw.Restart();
-        long resultadoInseguro = FibonacciInseguro(n);
-        sw.Stop();
-        
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"[O(2^n)] Resultado: {resultadoInseguro} | Tiempo: {sw.ElapsedMilliseconds} ms\n");
-        Console.ResetColor();
-
-        // --- MÉTODO 2: MEMOIZATION (Caché) ---
-        long[] cache = new long[n + 1];
-        for (int i = 0; i <= n; i++) 
-        {
-            cache[i] = -1;
-        }
-
-        Console.WriteLine($"Calculando Fibonacci({n}) con Memoization...");
-        sw.Restart();
-        long resultadoPro = FibonacciPro(n, cache);
-        sw.Stop();
+        // Pasamos las variables por referencia (su dirección en memoria)
+        Intercambiar(ref x, ref y);
         
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"[O(n)]   Resultado: {resultadoPro} | Tiempo: {sw.ElapsedMilliseconds} ms\n");
+        Console.WriteLine($"Después del intercambio: x = {x}, y = {y}\n");
+        Console.ResetColor();
+
+        Console.WriteLine("=== MÓDULO 2: Modificador 'out' ===");
+        // 'resto' no necesita estar inicializada antes, la función la creará
+        int cociente = CalcularYValidar(17, 5, out int resto);
+        
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine($"17 / 5 = Cociente: {cociente}, Residuo: {resto}\n");
+        Console.ResetColor();
+
+        Console.WriteLine("=== MÓDULO 3: Referencias de Objetos ===");
+        Alumno alumno1 = new Alumno { Nombre = "Dany" };
+        
+        // ¡Atención! Esto NO saca fotocopia, solo comparte la dirección de memoria
+        Alumno alumno2 = alumno1; 
+        
+        Console.WriteLine($"Nombre original en alumno1: {alumno1.Nombre}");
+        Console.WriteLine("Cambiando el nombre en alumno2 a '3Treum'...");
+        alumno2.Nombre = "3Treum";
+        
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        // Cambiar alumno2 afectó a alumno1 porque son la misma entidad en el Heap
+        Console.WriteLine($"Nuevo nombre en alumno1: {alumno1.Nombre}\n");
         Console.ResetColor();
     }
 
-    public static long FibonacciInseguro(int n)
+    // FUNCIÓN 1: Requiere 'ref' para alterar la memoria original
+    static void Intercambiar(ref int a, ref int b)
     {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        return FibonacciInseguro(n - 1) + FibonacciInseguro(n - 2);
+        int temp = a;
+        a = b;
+        b = temp;
     }
 
-    public static long FibonacciPro(int n, long[] cache)
+    // FUNCIÓN 2: Requiere 'out' para obligar a devolver el residuo
+    static int CalcularYValidar(int dividendo, int divisor, out int residuo)
     {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        
-        if (cache[n] != -1) return cache[n];
-        
-        cache[n] = FibonacciPro(n - 1, cache) + FibonacciPro(n - 2, cache);
-        return cache[n];
+        residuo = dividendo % divisor; // Obligatorio asignarlo antes de salir
+        return dividendo / divisor;
     }
+}
