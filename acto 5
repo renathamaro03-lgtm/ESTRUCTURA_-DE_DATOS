@@ -1,56 +1,85 @@
-﻿using System;
-using System.Diagnostics; 
+﻿u﻿using System;
 
-class Clase9_Memoization
+// 1. LA ESTRUCTURA DEL NODO
+// Cada nodo es como una caja que guarda un valor y tiene dos conectores (izquierdo y derecho)
+public class Nodo
+{
+    public int ID { get; set; }
+    public string Dato { get; set; } = string.Empty;
+    
+    // Usamos el signo de interrogación (?) porque un hijo puede ser nulo (no existir aún)
+    public Nodo? HijoIzquierdo { get; set; }
+    public Nodo? HijoDerecho { get; set; }
+
+    public Nodo(int id, string dato)
+    {
+        ID = id;
+        Dato = dato;
+    }
+}
+
+class Clase5_Arboles
 {
     static void Main()
     {
-        Console.WriteLine("=== Benchmark: Fuerza Bruta vs Memoization ===\n");
-        
-        int n = 40; 
-        Stopwatch sw = new Stopwatch();
+        Console.WriteLine("=== Construcción de Árbol Binario ===\n");
 
-        // --- MÉTODO 1: FUERZA BRUTA ---
-        Console.WriteLine($"Calculando Fibonacci({n}) con Fuerza Bruta (Espera unos segundos)...");
-        sw.Restart();
-        long resultadoInseguro = FibonacciInseguro(n);
-        sw.Stop();
+        // 2. CREANDO LA RAÍZ
+        Nodo? raiz = new Nodo(10, "Raíz Principal (Centro)");
         
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"[O(2^n)] Resultado: {resultadoInseguro} | Tiempo: {sw.ElapsedMilliseconds} ms\n");
-        Console.ResetColor();
+        // 3. INSERTANDO DATOS (La lógica los acomodará automáticamente)
+        raiz = InsertarNodo(raiz, new Nodo(5, "Rama Izquierda (Menor)"));
+        raiz = InsertarNodo(raiz, new Nodo(15, "Rama Derecha (Mayor)"));
+        raiz = InsertarNodo(raiz, new Nodo(3, "Hoja Extrema Izquierda"));
+        raiz = InsertarNodo(raiz, new Nodo(7, "Hoja Interna Izquierda"));
 
-        // --- MÉTODO 2: MEMOIZATION (Caché) ---
-        long[] cache = new long[n + 1];
-        for (int i = 0; i <= n; i++) 
+        // 4. PRUEBA DE BÚSQUEDA
+        Console.WriteLine("Buscando el ID 7...");
+        string? resultado = BuscarNodo(raiz, 7);
+        
+        if (resultado != null)
         {
-            cache[i] = -1;
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"¡Encontrado! Dato: {resultado}");
         }
-
-        Console.WriteLine($"Calculando Fibonacci({n}) con Memoization...");
-        sw.Restart();
-        long resultadoPro = FibonacciPro(n, cache);
-        sw.Stop();
-        
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"[O(n)]   Resultado: {resultadoPro} | Tiempo: {sw.ElapsedMilliseconds} ms\n");
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Error: Nodo no encontrado.");
+        }
         Console.ResetColor();
     }
 
-    public static long FibonacciInseguro(int n)
+    // FUNCIÓN PARA INSERTAR (Recursiva)
+    public static Nodo InsertarNodo(Nodo? raiz, Nodo nuevoNodo)
     {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        return FibonacciInseguro(n - 1) + FibonacciInseguro(n - 2);
+        // CASO BASE: Si llegamos a un espacio vacío, ahí plantamos el nodo
+        if (raiz == null) return nuevoNodo;
+        
+        // Si el nuevo ID es menor, vete por el camino de la izquierda
+        if (nuevoNodo.ID < raiz.ID)
+            raiz.HijoIzquierdo = InsertarNodo(raiz.HijoIzquierdo, nuevoNodo);
+        // Si es mayor, vete por el camino de la derecha
+        else if (nuevoNodo.ID > raiz.ID)
+            raiz.HijoDerecho = InsertarNodo(raiz.HijoDerecho, nuevoNodo);
+            
+        return raiz;
     }
 
-    public static long FibonacciPro(int n, long[] cache)
+    // FUNCIÓN PARA BUSCAR RÁPIDO O(log n)
+    public static string? BuscarNodo(Nodo? raiz, int idTarget)
     {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
+        // Si llegamos a un camino sin salida, el dato no existe
+        if (raiz == null) return null;
         
-        if (cache[n] != -1) return cache[n];
+        // ¡Lo encontramos!
+        if (idTarget == raiz.ID) return raiz.Dato;
         
-        cache[n] = FibonacciPro(n - 1, cache) + FibonacciPro(n - 2, cache);
-        return cache[n];
+        // Si lo que busco es menor a donde estoy parado, descarto toda la rama derecha
+        if (idTarget < raiz.ID)
+            return BuscarNodo(raiz.HijoIzquierdo, idTarget);
+        // Si es mayor, descarto toda la rama izquierda
+        else
+            return BuscarNodo(raiz.HijoDerecho, idTarget);
     }
+}
