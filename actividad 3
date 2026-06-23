@@ -1,56 +1,69 @@
-﻿using System;
-using System.Diagnostics; 
+﻿﻿using System;
+using System.Collections.Generic;
+using System.Linq; // Necesario para usar consultas avanzadas
 
-class Clase9_Memoization
+// 1. NUESTRO MODELO DE DATOS
+public class Producto
+{
+    public int ID { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public double Precio { get; set; }
+    public int Cantidad { get; set; }
+
+    // Este método nos ayuda a imprimir el producto bonito en consola
+    public override string ToString()
+    {
+        return $"[{ID}] {Nombre} - ${Precio:F2} | Stock: {Cantidad}";
+    }
+}
+
+class Clase3_Colecciones
 {
     static void Main()
     {
-        Console.WriteLine("=== Benchmark: Fuerza Bruta vs Memoization ===\n");
-        
-        int n = 40; 
-        Stopwatch sw = new Stopwatch();
+        Console.WriteLine("=== Sistema de Inventario ===\n");
 
-        // --- MÉTODO 1: FUERZA BRUTA ---
-        Console.WriteLine($"Calculando Fibonacci({n}) con Fuerza Bruta (Espera unos segundos)...");
-        sw.Restart();
-        long resultadoInseguro = FibonacciInseguro(n);
-        sw.Stop();
-        
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"[O(2^n)] Resultado: {resultadoInseguro} | Tiempo: {sw.ElapsedMilliseconds} ms\n");
-        Console.ResetColor();
-
-        // --- MÉTODO 2: MEMOIZATION (Caché) ---
-        long[] cache = new long[n + 1];
-        for (int i = 0; i <= n; i++) 
+        // 2. CREACIÓN DE LA LISTA DINÁMICA
+        // Inicializamos con 4 productos y luego agregamos un quinto
+        List<Producto> inventario = new List<Producto>
         {
-            cache[i] = -1;
+            new Producto { ID = 1, Nombre = "Lenovo ThinkPad T14 Gen 2", Precio = 25000.00, Cantidad = 10 },
+            new Producto { ID = 2, Nombre = "Mouse Inalámbrico Razer", Precio = 899.00, Cantidad = 25 },
+            new Producto { ID = 3, Nombre = "Teclado Mecánico", Precio = 1299.00, Cantidad = 0 },
+            new Producto { ID = 4, Nombre = "Monitor Samsung 24\"", Precio = 4500.00, Cantidad = 5 }
+        };
+        // Agregando con el método .Add()
+        inventario.Add(new Producto { ID = 5, Nombre = "Audífonos Sony", Precio = 1200.00, Cantidad = 0 });
+
+        // 3. CONSULTAS LINQ (Ordenamiento y Filtrado)
+        Console.WriteLine("--- Productos ordenados por precio (Mayor a Menor) ---");
+        var porPrecio = inventario.OrderByDescending(p => p.Precio).ToList();
+        porPrecio.ForEach(p => Console.WriteLine(p));
+
+        Console.WriteLine("\n--- Productos Agotados ---");
+        var agotados = inventario.Where(p => p.Cantidad == 0).ToList();
+        agotados.ForEach(p => Console.WriteLine(p));
+
+        // 4. DICCIONARIO (Búsqueda hiper-rápida)
+        // Convertimos la lista a Diccionario usando el ID como llave
+        Dictionary<int, Producto> catalogo = inventario.ToDictionary(p => p.ID, p => p);
+
+        Console.Write("\nIngresa el ID del producto a buscar (ej. 3): ");
+        if (int.TryParse(Console.ReadLine(), out int idBuscado))
+        {
+            // TryGetValue busca la llave sin romper el programa si no existe
+            if (catalogo.TryGetValue(idBuscado, out Producto encontrado))
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"¡Encontrado!: {encontrado.Nombre}");
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Error: El ID no existe en el catálogo.");
+                Console.ResetColor();
+            }
         }
-
-        Console.WriteLine($"Calculando Fibonacci({n}) con Memoization...");
-        sw.Restart();
-        long resultadoPro = FibonacciPro(n, cache);
-        sw.Stop();
-        
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"[O(n)]   Resultado: {resultadoPro} | Tiempo: {sw.ElapsedMilliseconds} ms\n");
-        Console.ResetColor();
     }
-
-    public static long FibonacciInseguro(int n)
-    {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        return FibonacciInseguro(n - 1) + FibonacciInseguro(n - 2);
-    }
-
-    public static long FibonacciPro(int n, long[] cache)
-    {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        
-        if (cache[n] != -1) return cache[n];
-        
-        cache[n] = FibonacciPro(n - 1, cache) + FibonacciPro(n - 2, cache);
-        return cache[n];
-    }
+}
