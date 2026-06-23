@@ -1,56 +1,60 @@
 ﻿using System;
-using System.Diagnostics; 
 
-class Clase9_Memoization
+// 1. NUESTRO TIPO DE DATO PERSONALIZADO (Vive en el Stack, es ultraligero)
+public readonly struct CoordenadaGPS
+{
+    public double Latitud { get; }
+    public double Longitud { get; }
+
+    // Constructor con validación estricta
+    public CoordenadaGPS(double lat, double lon)
+    {
+        if (lat < -90 || lat > 90)
+            throw new ArgumentOutOfRangeException(nameof(lat), "La latitud debe estar entre -90 y 90 grados.");
+        if (lon < -180 || lon > 180)
+            throw new ArgumentOutOfRangeException(nameof(lon), "La longitud debe estar entre -180 y 180 grados.");
+
+        Latitud = lat;
+        Longitud = lon;
+    }
+
+    public void ImprimirUbicacion()
+    {
+        Console.WriteLine($"[GPS] Latitud: {Latitud:F4}°, Longitud: {Longitud:F4}°");
+    }
+}
+
+class Clase10_Structs
 {
     static void Main()
     {
-        Console.WriteLine("=== Benchmark: Fuerza Bruta vs Memoization ===\n");
-        
-        int n = 40; 
-        Stopwatch sw = new Stopwatch();
+        Console.WriteLine("=== Sistema de Telemetría GPS ===\n");
 
-        // --- MÉTODO 1: FUERZA BRUTA ---
-        Console.WriteLine($"Calculando Fibonacci({n}) con Fuerza Bruta (Espera unos segundos)...");
-        sw.Restart();
-        long resultadoInseguro = FibonacciInseguro(n);
-        sw.Stop();
-        
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"[O(2^n)] Resultado: {resultadoInseguro} | Tiempo: {sw.ElapsedMilliseconds} ms\n");
-        Console.ResetColor();
-
-        // --- MÉTODO 2: MEMOIZATION (Caché) ---
-        long[] cache = new long[n + 1];
-        for (int i = 0; i <= n; i++) 
+        try
         {
-            cache[i] = -1;
+            // 2. Creando coordenadas válidas
+            Console.WriteLine("--- Coordenada 1 (Sede Corporativa) ---");
+            CoordenadaGPS c1 = new CoordenadaGPS(19.4326, -99.1332);
+            c1.ImprimirUbicacion();
+
+            // Demostrando copia por valor (Stack)
+            Console.WriteLine("\n--- Coordenada 2 (Copia Independiente) ---");
+            CoordenadaGPS c2 = c1; 
+            // Aunque cambiemos de variable, como es un struct, c1 no se afecta.
+            c2 = new CoordenadaGPS(52.5200, 13.4050); 
+            c2.ImprimirUbicacion();
+
+            // 3. Forzando un error de telemetría
+            Console.WriteLine("\n--- Recibiendo datos corruptos del satélite... ---");
+            // Intentamos meter una latitud imposible (150 grados)
+            CoordenadaGPS coordError = new CoordenadaGPS(150.0, -99.1332);
         }
-
-        Console.WriteLine($"Calculando Fibonacci({n}) con Memoization...");
-        sw.Restart();
-        long resultadoPro = FibonacciPro(n, cache);
-        sw.Stop();
-        
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"[O(n)]   Resultado: {resultadoPro} | Tiempo: {sw.ElapsedMilliseconds} ms\n");
-        Console.ResetColor();
+        catch (ArgumentOutOfRangeException ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("¡Alerta de Sistema! Se interceptó una coordenada inválida.");
+            Console.WriteLine($"Detalle técnico: {ex.Message}");
+            Console.ResetColor();
+        }
     }
-
-    public static long FibonacciInseguro(int n)
-    {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        return FibonacciInseguro(n - 1) + FibonacciInseguro(n - 2);
-    }
-
-    public static long FibonacciPro(int n, long[] cache)
-    {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        
-        if (cache[n] != -1) return cache[n];
-        
-        cache[n] = FibonacciPro(n - 1, cache) + FibonacciPro(n - 2, cache);
-        return cache[n];
-    }
+}
