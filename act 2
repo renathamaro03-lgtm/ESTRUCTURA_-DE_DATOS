@@ -1,56 +1,41 @@
-﻿using System;
-using System.Diagnostics; 
+﻿﻿using System;
 
-class Clase9_Memoization
+class Clase2_Memoria
 {
     static void Main()
     {
-        Console.WriteLine("=== Benchmark: Fuerza Bruta vs Memoization ===\n");
-        
-        int n = 40; 
-        Stopwatch sw = new Stopwatch();
+        Console.WriteLine("=== Demostración de Stack vs Heap ===");
 
-        // --- MÉTODO 1: FUERZA BRUTA ---
-        Console.WriteLine($"Calculando Fibonacci({n}) con Fuerza Bruta (Espera unos segundos)...");
-        sw.Restart();
-        long resultadoInseguro = FibonacciInseguro(n);
-        sw.Stop();
+        // 1. Value Type (Vive en el Stack)
+        int miNumero = 10;
         
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"[O(2^n)] Resultado: {resultadoInseguro} | Tiempo: {sw.ElapsedMilliseconds} ms\n");
-        Console.ResetColor();
+        // 2. Reference Type (Vive en el Heap)
+        int[] miArreglo = { 1, 2, 3 };
 
-        // --- MÉTODO 2: MEMOIZATION (Caché) ---
-        long[] cache = new long[n + 1];
-        for (int i = 0; i <= n; i++) 
-        {
-            cache[i] = -1;
-        }
+        Console.WriteLine("\n--- ANTES DE LAS FUNCIONES ---");
+        Console.WriteLine($"Número original: {miNumero}");
+        Console.WriteLine($"Primer valor del arreglo original: {miArreglo[0]}");
 
-        Console.WriteLine($"Calculando Fibonacci({n}) con Memoization...");
-        sw.Restart();
-        long resultadoPro = FibonacciPro(n, cache);
-        sw.Stop();
-        
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"[O(n)]   Resultado: {resultadoPro} | Tiempo: {sw.ElapsedMilliseconds} ms\n");
-        Console.ResetColor();
+        // Llamamos a las funciones
+        CambiarValor(miNumero);
+        CambiarReferencia(miArreglo);
+
+        Console.WriteLine("\n--- DESPUÉS DE LAS FUNCIONES ---");
+        // miNumero seguirá siendo 10 (la función modificó una copia)
+        Console.WriteLine($"Número original: {miNumero}");
+        // miArreglo[0] ahora será 100 (la función modificó la memoria real)
+        Console.WriteLine($"Primer valor del arreglo original: {miArreglo[0]}");
     }
 
-    public static long FibonacciInseguro(int n)
+    // Esta función recibe una COPIA del número.
+    static void CambiarValor(int x)
     {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        return FibonacciInseguro(n - 1) + FibonacciInseguro(n - 2);
+        x = 100; // Esto solo afecta a la "x" local, no a "miNumero" del Main
     }
 
-    public static long FibonacciPro(int n, long[] cache)
+    // Esta función recibe la DIRECCIÓN de memoria del arreglo.
+    static void CambiarReferencia(int[] arr)
     {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        
-        if (cache[n] != -1) return cache[n];
-        
-        cache[n] = FibonacciPro(n - 1, cache) + FibonacciPro(n - 2, cache);
-        return cache[n];
+        arr[0] = 100; // Esto altera el arreglo original directamente en el Heap
     }
+}
