@@ -1,0 +1,179 @@
+using System;
+
+namespace ProyectoDataCore.Fase3
+{
+    // 1. Estructura de datos inmutable
+    public struct RegistroDatos
+    {
+        public int Id { get; }
+        public string Nombre { get; }
+        public decimal Monto { get; }
+
+        public RegistroDatos(int id, string nombre, decimal monto)
+        {
+            if (id <= 0) throw new ArgumentException("El Id debe ser positivo.");
+            Id = id;
+            Nombre = nombre ?? throw new ArgumentNullException(nameof(nombre));
+            Monto = monto;
+        }
+
+        public override string ToString() => $"Id: {Id} | Nombre: {Nombre} | Monto: {Monto:C}";
+    }
+
+    // 2. Nodo dinámico en el Heap
+    public class NodoRegistro
+    {
+        public RegistroDatos Dato { get; set; }
+        public NodoRegistro? Siguiente { get; set; }
+
+        public NodoRegistro(RegistroDatos dato)
+        {
+            Dato = dato;
+            Siguiente = null;
+        }
+    }
+
+    // 3. Gestor de la Lista Enlazada
+    public class TablaDinamica
+    {
+        private NodoRegistro? cabeza;
+        private int contadorRegistros;
+
+        public TablaDinamica()
+        {
+            cabeza = null;
+            contadorRegistros = 0;
+        }
+
+        public int TotalRegistros => contadorRegistros;
+
+        public void InsertarFinal(RegistroDatos nuevoRegistro)
+        {
+            NodoRegistro nuevoNodo = new NodoRegistro(nuevoRegistro);
+
+            if (cabeza == null)
+            {
+                cabeza = nuevoNodo;
+            }
+            else
+            {
+                NodoRegistro actual = cabeza;
+                while (actual.Siguiente != null)
+                {
+                    actual = actual.Siguiente;
+                }
+                actual.Siguiente = nuevoNodo;
+            }
+            contadorRegistros++;
+        }
+
+        public void EliminarPorId(int idTarget)
+        {
+            if (cabeza == null) return;
+
+            // Caso especial: Eliminar la cabeza
+            if (cabeza.Dato.Id == idTarget)
+            {
+                cabeza = cabeza.Siguiente;
+                contadorRegistros--;
+                return;
+            }
+
+            NodoRegistro anterior = cabeza;
+            NodoRegistro? actual = cabeza.Siguiente;
+
+            while (actual != null)
+            {
+                if (actual.Dato.Id == idTarget)
+                {
+                    anterior.Siguiente = actual.Siguiente; // Salta y desconecta el nodo
+                    contadorRegistros--;
+                    return;
+                }
+                anterior = actual;
+                actual = actual.Siguiente;
+            }
+        }
+
+        public RegistroDatos[] ObtenerComoArreglo()
+        {
+            RegistroDatos[] resultado = new RegistroDatos[contadorRegistros];
+            NodoRegistro? actual = cabeza;
+            int idx = 0;
+
+            while (actual != null)
+            {
+                resultado[idx++] = actual.Dato;
+                actual = actual.Siguiente;
+            }
+            return resultado;
+        }
+    }
+
+    // 4. Orquestador Principal
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            TablaDinamica dataCore = new TablaDinamica();
+
+            Console.WriteLine("=== PASO 1: INSERTANDO 15 REGISTROS EN LA LISTA ===");
+            for (int i = 1; i <= 15; i++)
+            {
+                RegistroDatos reg = new RegistroDatos(i, $"Transacción-{i}", i * 100.0m);
+                dataCore.InsertarFinal(reg);
+                Console.WriteLine($"[INSERT] Registro {i} añadido a la cadena.");
+            }
+
+            Console.WriteLine("\n=== PASO 2: ELIMINANDO REGISTROS CON ID 5 Y 11 ===");
+            dataCore.EliminarPorId(5);
+            dataCore.EliminarPorId(11);
+            Console.WriteLine("Cadena reestructurada exitosamente. Sin NullReferenceException.");
+
+            Console.WriteLine("\n=== PASO 3: INTEROPERABILIDAD Y ORDENAMIENTO (QUICKSORT) ===");
+            RegistroDatos[] arreglo = dataCore.ObtenerComoArreglo();
+            Console.WriteLine($"Registros en arreglo: {arreglo.Length} (esperado: 13)");
+
+            QuickSort(arreglo, 0, arreglo.Length - 1);
+
+            Console.WriteLine("\n--- Arreglo ordenado por Id (QuickSort) ---");
+            foreach (var r in arreglo)
+            {
+                Console.WriteLine(r);
+            }
+        }
+
+        // Algoritmo QuickSort de la Fase 2
+        public static void QuickSort(RegistroDatos[] arr, int bajo, int alto)
+        {
+            if (bajo < alto)
+            {
+                int p = Particionar(arr, bajo, alto);
+                QuickSort(arr, bajo, p - 1);
+                QuickSort(arr, p + 1, alto);
+            }
+        }
+
+        private static int Particionar(RegistroDatos[] arr, int bajo, int alto)
+        {
+            RegistroDatos pivote = arr[alto];
+            int i = bajo - 1;
+
+            for (int j = bajo; j < alto; j++)
+            {
+                if (arr[j].Id <= pivote.Id)
+                {
+                    i++;
+                    RegistroDatos temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+            RegistroDatos temp2 = arr[i + 1];
+            arr[i + 1] = arr[alto];
+            arr[alto] = temp2;
+
+            return i + 1;
+        }
+    }
+}
