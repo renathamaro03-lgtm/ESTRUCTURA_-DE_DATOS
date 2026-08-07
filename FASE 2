@@ -1,0 +1,184 @@
+using System;
+using System.Diagnostics;
+
+namespace ProyectoFinal.Fase2
+{
+    // =========================================================================
+    // Componente A: Estratégica Inmutable 'RegistroDatos' (Modelado de Datos)
+    // =========================================================================
+    public struct RegistroDatos
+    {
+        public int Id { get; }
+        public string HashValidacion { get; }
+        public double PesoBytes { get; }
+
+        public RegistroDatos(int id, string hashValidacion, double pesoBytes)
+        {
+            if (id <= 0)
+                throw new ArgumentException("El Id debe ser un entero positivo mayor que cero", nameof(id));
+            if (string.IsNullOrEmpty(hashValidacion))
+                throw new ArgumentNullException(nameof(hashValidacion), "HashValidacion no puede ser null ni vacio");
+            if (pesoBytes <= 0)
+                throw new ArgumentOutOfRangeException(nameof(pesoBytes), "PesoBytes debe ser positivo");
+
+            Id = id;
+            HashValidacion = hashValidacion;
+            PesoBytes = pesoBytes;
+        }
+
+        public override string ToString() => $"[Id: {Id} | Hash: {HashValidacion} | Peso: {PesoBytes:F2} B]";
+    }
+
+    class Program
+    {
+        // Contador global para auditar la profundidad del Call Stack (Pila de llamadas)
+        public static int contadorLlamadas = 0;
+
+        // =========================================================================
+        // Componente B: Método Orquestador Recursivo QuickSort
+        // Complejidad Temporal Promedio: O(n log n) | Peor Caso: O(n²)
+        // Complejidad Espacial Promedio: O(log n) en el Call Stack
+        // =========================================================================
+        public static void QuickSort(RegistroDatos[] arr, int bajo, int alto)
+        {
+            contadorLlamadas++;
+
+            // Caso Base: Procede solo si el subarreglo contiene 2 o más elementos
+            if (bajo < alto)
+            {
+                // 1. Obtiene el índice definitivo del pivote tras reorganizar
+                int indicePivote = Particionar(arr, bajo, alto);
+
+                // 2. Llamada recursiva para la sublista IZQUIERDA (elementos menores o iguales)
+                QuickSort(arr, bajo, indicePivote - 1);
+
+                // 3. Llamada recursiva para la sublista DERECHA (elementos mayores)
+                QuickSort(arr, indicePivote + 1, alto);
+            }
+        }
+
+        // =========================================================================
+        // Componente C: Algoritmo de Particionado (Esquema de Lomuto)
+        // Ubica el pivote en su posición final inamovible
+        // =========================================================================
+        private static int Particionar(RegistroDatos[] arr, int bajo, int alto)
+        {
+            // Selección del pivote: último elemento del rango actual
+            RegistroDatos pivote = arr[alto]; 
+            
+            // Puntero i: marca la frontera de los elementos menores al pivote
+            int i = bajo - 1; 
+
+            // Recorre el subarreglo
+            for (int j = bajo; j < alto; j++)
+            {
+                // Criterio de Ordenación: Comparación por propiedad entera 'Id'
+                if (arr[j].Id <= pivote.Id)
+                {
+                    i++;
+                    // Intercambio (Swap) para mover el elemento menor al bloque izquierdo
+                    RegistroDatos temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+
+            // Coloca el pivote en su posición definitiva
+            RegistroDatos temp2 = arr[i + 1];
+            arr[i + 1] = arr[alto];
+            arr[alto] = temp2;
+
+            // Retorna el índice exacto e inamovible del pivote
+            return i + 1;
+        }
+
+        // =========================================================================
+        // Componente Auxiliar: Selection Sort de la Fase 1 (para Benchmarking)
+        // Complejidad Temporal: O(n²)
+        // =========================================================================
+        public static void OrdenarPorSeleccion(RegistroDatos[] arr)
+        {
+            int n = arr.Length;
+            for (int i = 0; i < n - 1; i++)
+            {
+                int minIdx = i;
+                for (int j = i + 1; j < n; j++)
+                {
+                    if (arr[j].Id < arr[minIdx].Id)
+                    {
+                        minIdx = j;
+                    }
+                }
+                if (minIdx != i)
+                {
+                    RegistroDatos temp = arr[i];
+                    arr[i] = arr[minIdx];
+                    arr[minIdx] = temp;
+                }
+            }
+        }
+
+        // Generador de datos con semilla fija para reproducibilidad
+        public static RegistroDatos[] GenerarArregloAleatorio(int tamano)
+        {
+            Random rng = new Random(42); // Semilla fija
+            RegistroDatos[] datos = new RegistroDatos[tamano];
+            
+            for (int i = 0; i < tamano; i++)
+            {
+                int id = rng.Next(1, 1000000);
+                string hash = Guid.NewGuid().ToString().Substring(0, 8);
+                double peso = rng.NextDouble() * 500.0 + 1.0;
+                datos[i] = new RegistroDatos(id, hash, peso);
+            }
+            return datos;
+        }
+
+        // =========================================================================
+        // Componente D: Main y Benchmarking Comparativo
+        // =========================================================================
+        static void Main(string[] args)
+        {
+            int tamano = 10000;
+            Console.WriteLine($"Generando {tamano:N0} registros de prueba...");
+            
+            RegistroDatos[] original = GenerarArregloAleatorio(tamano);
+
+            // Clonación para garantizar exactamente las mismas condiciones iniciales
+            RegistroDatos[] copiaSeleccion = (RegistroDatos[])original.Clone();
+            RegistroDatos[] copiaQuickSort = (RegistroDatos[])original.Clone();
+
+            // 1. Benchmarking Selection Sort (Fase 1)
+            Console.WriteLine("Ejecutando Selection Sort (Fase 1)...");
+            Stopwatch sw1 = Stopwatch.StartNew();
+            OrdenarPorSeleccion(copiaSeleccion);
+            sw1.Stop();
+
+            // 2. Benchmarking QuickSort (Fase 2)
+            Console.WriteLine("Ejecutando QuickSort Recursivo (Fase 2)...");
+            contadorLlamadas = 0;
+            Stopwatch sw2 = Stopwatch.StartNew();
+            QuickSort(copiaQuickSort, 0, copiaQuickSort.Length - 1);
+            sw2.Stop();
+
+            // Reporte de Salida
+            Console.WriteLine("\n=======================================================");
+            Console.WriteLine($" REPORTE COMPARATIVO DE RENDIMIENTO (N = {tamano:N0}) ");
+            Console.WriteLine("=======================================================");
+            Console.WriteLine($"• Selection Sort (O(n²)) : {sw1.ElapsedMilliseconds} ms ({sw1.ElapsedTicks:N0} ticks)");
+            Console.WriteLine($"• QuickSort (O(n log n)) : {sw2.ElapsedMilliseconds} ms ({sw2.ElapsedTicks:N0} ticks)");
+            Console.WriteLine($"• Llamadas Recursivas en QuickSort : {contadorLlamadas:N0}");
+            
+            if (sw2.ElapsedMilliseconds > 0)
+            {
+                double ratio = (double)sw1.ElapsedMilliseconds / sw2.ElapsedMilliseconds;
+                Console.WriteLine($"\n>> Resultado: QuickSort fue {ratio:F1}x más rápido.");
+            }
+            else
+            {
+                Console.WriteLine("\n>> Resultado: QuickSort se ejecutó tan rápido que requirió medir en microsegundos/ticks.");
+            }
+            Console.WriteLine("=======================================================");
+        }
+    }
+}
