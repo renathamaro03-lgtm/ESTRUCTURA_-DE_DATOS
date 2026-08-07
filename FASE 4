@@ -1,0 +1,385 @@
+using System;
+using System.Collections.Generic;
+
+namespace DataCore
+{
+    // Modelo de datos para representar cada registro en memoria
+    public class RegistroDatos
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public double Valor { get; set; }
+
+        public RegistroDatos(int id, string nombre, double valor)
+        {
+            Id = id;
+            Nombre = nombre;
+            Valor = valor;
+        }
+
+        public override string ToString()
+        {
+            return $"[ID: {Id} | Nombre: {Nombre} | Valor: {Valor:C}]";
+        }
+    }
+
+    // Nodo individual para la Lista Enlazada Simple
+    public class Nodo
+    {
+        public RegistroDatos Dato { get; set; }
+        public Nodo Siguiente { get; set; }
+
+        public Nodo(RegistroDatos dato)
+        {
+            Dato = dato;
+            Siguiente = null;
+        }
+    }
+
+    // Estructura de almacenamiento principal (Lista Enlazada)
+    public class TablaDinamica
+    {
+        private Nodo cabeza;
+        private int cantidad;
+
+        public int Cantidad => cantidad;
+
+        public TablaDinamica()
+        {
+            cabeza = null;
+            cantidad = 0;
+        }
+
+        public void Insertar(RegistroDatos nuevoDato)
+        {
+            Nodo nuevoNodo = new Nodo(nuevoDato);
+            if (cabeza == null)
+            {
+                cabeza = nuevoNodo;
+            }
+            else
+            {
+                Nodo actual = cabeza;
+                while (actual.Siguiente != null)
+                {
+                    actual = actual.Siguiente;
+                }
+                actual.Siguiente = nuevoNodo;
+            }
+            cantidad++;
+        }
+
+        public bool Eliminar(int id)
+        {
+            if (cabeza == null) return false;
+
+            if (cabeza.Dato.Id == id)
+            {
+                cabeza = cabeza.Siguiente;
+                cantidad--;
+                return true;
+            }
+
+            Nodo actual = cabeza;
+            while (actual.Siguiente != null && actual.Siguiente.Dato.Id != id)
+            {
+                actual = actual.Siguiente;
+            }
+
+            if (actual.Siguiente != null)
+            {
+                actual.Siguiente = actual.Siguiente.Siguiente;
+                cantidad--;
+                return true;
+            }
+
+            return false;
+        }
+
+        public void Mostrar()
+        {
+            if (cabeza == null)
+            {
+                Console.WriteLine("La tabla de datos está vacía.");
+                return;
+            }
+
+            Nodo actual = cabeza;
+            Console.WriteLine("\n--- LISTA DE REGISTROS EN MEMORIA ---");
+            while (actual != null)
+            {
+                Console.WriteLine(actual.Dato.ToString());
+                actual = actual.Siguiente;
+            }
+        }
+
+        // Extrae la lista a un arreglo para permitir búsqueda binaria por índice O(1)
+        public RegistroDatos[] ObtenerArreglo()
+        {
+            RegistroDatos[] arreglo = new RegistroDatos[cantidad];
+            Nodo actual = cabeza;
+            int i = 0;
+            while (actual != null && i < cantidad)
+            {
+                arreglo[i] = actual.Dato;
+                actual = actual.Siguiente;
+                i++;
+            }
+            return arreglo;
+        }
+    }
+
+    public static class BuscadorIndexado
+    {
+        // Búsqueda Binaria O(log n)
+        public static (RegistroDatos registro, int comparaciones) BuscarRegistroIndexado(RegistroDatos[] arreglo, int idBuscado)
+        {
+            int comparaciones = 0;
+            if (arreglo == null || arreglo.Length == 0)
+            {
+                return (null, comparaciones);
+            }
+
+            int izquierda = 0;
+            int derecha = arreglo.Length - 1;
+
+            while (izquierda <= derecha)
+            {
+                comparaciones++;
+                int medio = izquierda + (derecha - izquierda) / 2;
+
+                if (arreglo[medio].Id == idBuscado)
+                {
+                    return (arreglo[medio], comparaciones);
+                }
+
+                if (arreglo[medio].Id < idBuscado)
+                {
+                    izquierda = medio + 1;
+                }
+                else
+                {
+                    derecha = medio - 1;
+                }
+            }
+
+            return (null, comparaciones);
+        }
+
+        // Ordenamiento previo QuickSort
+        public static void OrdenarArreglo(RegistroDatos[] arreglo, int izq, int der)
+        {
+            if (izq < der)
+            {
+                int pivoteIndex = Particionar(arreglo, izq, der);
+                OrdenarArreglo(arreglo, izq, pivoteIndex - 1);
+                OrdenarArreglo(arreglo, pivoteIndex + 1, der);
+            }
+        }
+
+        private static int Particionar(RegistroDatos[] arreglo, int izq, int der)
+        {
+            int pivote = arreglo[der].Id;
+            int i = izq - 1;
+            for (int j = izq; j < der; j++)
+            {
+                if (arreglo[j].Id <= pivote)
+                {
+                    i++;
+                    var temp = arreglo[i];
+                    arreglo[i] = arreglo[j];
+                    arreglo[j] = temp;
+                }
+            }
+            var temp2 = arreglo[i + 1];
+            arreglo[i + 1] = arreglo[der];
+            arreglo[der] = temp2;
+            return i + 1;
+        }
+    }
+
+    public class Program
+    {
+        private static TablaDinamica tabla = new TablaDinamica();
+        private static RegistroDatos[] indiceOrdenado = null;
+
+        public static void Main(string[] args)
+        {
+            bool salir = false;
+            do
+            {
+                Console.Clear();
+                Console.WriteLine("==================================================");
+                Console.WriteLine("          DATACORE v4.0 - MENÚ MAESTRO           ");
+                Console.WriteLine("==================================================");
+                Console.WriteLine($"Registros en memoria: {tabla.Cantidad}");
+                Console.WriteLine($"Índice construido: {(indiceOrdenado != null ? "SÍ" : "NO")}");
+                Console.WriteLine("--------------------------------------------------");
+                Console.WriteLine("1. Insertar Registro");
+                Console.WriteLine("2. Eliminar Registro por ID");
+                Console.WriteLine("3. Mostrar Registros");
+                Console.WriteLine("4. Indexar y Ordenar Datos");
+                Console.WriteLine("5. Búsqueda Binaria Indexada O(log n)");
+                Console.WriteLine("6. Salir del Sistema");
+                Console.WriteLine("==================================================");
+                Console.Write("Seleccione una opción: ");
+
+                string opcionInput = Console.ReadLine();
+
+                switch (opcionInput)
+                {
+                    case "1":
+                        OpcionInsertar();
+                        break;
+                    case "2":
+                        OpcionEliminar();
+                        break;
+                    case "3":
+                        tabla.Mostrar();
+                        Pausar();
+                        break;
+                    case "4":
+                        OpcionIndexar();
+                        break;
+                    case "5":
+                        OpcionBusquedaBinaria();
+                        break;
+                    case "6":
+                        salir = ConfirmarSalida();
+                        break;
+                    default:
+                        Console.WriteLine("\n[ERROR] Opción no válida. Intente de nuevo.");
+                        Pausar();
+                        break;
+                }
+            } while (!salir);
+
+            Console.WriteLine("\nGracias por utilizar DataCore v4.0. ¡Hasta pronto!");
+        }
+
+        private static void OpcionInsertar()
+        {
+            try
+            {
+                Console.Write("\nIngrese ID (entero): ");
+                if (!int.TryParse(Console.ReadLine(), out int id))
+                {
+                    Console.WriteLine("[ERROR] El ID debe ser un número entero válido.");
+                    Pausar();
+                    return;
+                }
+
+                Console.Write("Ingrese Nombre: ");
+                string nombre = Console.ReadLine() ?? "Sin Nombre";
+
+                Console.Write("Ingrese Valor: ");
+                if (!double.TryParse(Console.ReadLine(), out double valor))
+                {
+                    Console.WriteLine("[ERROR] El valor ingresado no es válido.");
+                    Pausar();
+                    return;
+                }
+
+                tabla.Insertar(new RegistroDatos(id, nombre, valor));
+                indiceOrdenado = null; // Invalida el índice desactualizado
+                Console.WriteLine("[ÉXITO] Registro insertado correctamente.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR INESPERADO] {ex.Message}");
+            }
+            Pausar();
+        }
+
+        private static void OpcionEliminar()
+        {
+            try
+            {
+                Console.Write("\nIngrese ID a eliminar: ");
+                if (int.TryParse(Console.ReadLine(), out int id))
+                {
+                    if (tabla.Eliminar(id))
+                    {
+                        indiceOrdenado = null; // Invalida el índice desactualizado
+                        Console.WriteLine("[ÉXITO] Registro eliminado.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("[INFO] No se encontró un registro con ese ID.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[ERROR] ID no válido.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] {ex.Message}");
+            }
+            Pausar();
+        }
+
+        private static void OpcionIndexar()
+        {
+            if (tabla.Cantidad == 0)
+            {
+                Console.WriteLine("\n[ADVERTENCIA] No hay datos para indexar.");
+                Pausar();
+                return;
+            }
+
+            indiceOrdenado = tabla.ObtenerArreglo();
+            BuscadorIndexado.OrdenarArreglo(indiceOrdenado, 0, indiceOrdenado.Length - 1);
+            Console.WriteLine($"\n[ÉXITO] Índice construido correctamente con {indiceOrdenado.Length} elementos ordenados por ID.");
+            Pausar();
+        }
+
+        private static void OpcionBusquedaBinaria()
+        {
+            if (indiceOrdenado == null)
+            {
+                Console.WriteLine("\n[ADVERTENCIA] Debe ejecutar primero la Opción 4 (Indexar y Ordenar) antes de buscar.");
+                Pausar();
+                return;
+            }
+
+            Console.Write("\nIngrese el ID a buscar mediante Búsqueda Binaria: ");
+            if (int.TryParse(Console.ReadLine(), out int idBuscado))
+            {
+                var (resultado, comparaciones) = BuscadorIndexado.BuscarRegistroIndexado(indiceOrdenado, idBuscado);
+
+                Console.WriteLine("\n================ RESULTADO DE BÚSQUEDA ================");
+                if (resultado != null)
+                {
+                    Console.WriteLine($" Registro Encontrado : {resultado}");
+                }
+                else
+                {
+                    Console.WriteLine($" Estado               : ID {idBuscado} no encontrado.");
+                }
+                Console.WriteLine($" Comparaciones hechas : {comparaciones}");
+                Console.WriteLine(" Eficiencia algorítmica: O(log n)");
+                Console.WriteLine("======================================================");
+            }
+            else
+            {
+                Console.WriteLine("[ERROR] ID inválido.");
+            }
+            Pausar();
+        }
+
+        private static bool ConfirmarSalida()
+        {
+            Console.Write("\n¿Está seguro de que desea salir? (S/N): ");
+            string resp = Console.ReadLine()?.Trim().ToUpper();
+            return resp == "S";
+        }
+
+        private static void Pausar()
+        {
+            Console.WriteLine("\nPresione cualquier tecla para continuar...");
+            Console.ReadKey();
+        }
+    }
+}
